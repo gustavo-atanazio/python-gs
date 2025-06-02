@@ -145,7 +145,7 @@ class Occurrence:
     Atributos:
         id: identificador único da ocorrência.
         region: string com o nome da região/município.
-        severity: nível da queimada (int maior → prioridade maior).
+        Grau: nível da queimada (int maior → prioridade maior).
         status: 'pendente', 'em atendimento' ou 'concluída'.
         timestamp: data/hora de criação.
         actions: pilha de ações registradas durante o atendimento.
@@ -155,10 +155,10 @@ class Occurrence:
     """
     _counter = 0  # contador de IDs automáticos
 
-    def __init__(self, region: str, severity: int) -> None:
+    def __init__(self, region: str, Grau: int) -> None:
         self.id: int = Occurrence._generate_id()
         self.region: str = region
-        self.severity: int = severity
+        self.Grau: int = Grau
         self.status: str = "pendente"
         self.timestamp: datetime.datetime = datetime.datetime.now()
         self.actions: Stack = Stack()
@@ -192,7 +192,7 @@ class Occurrence:
 
     def __repr__(self) -> str:
         return (f"Occurrence(id={self.id}, region={self.region!r}, "
-                f"severity={self.severity}, status={self.status!r})")
+                f"Grau={self.Grau}, status={self.status!r})")
 
 
 # ------------------------------------------------------------
@@ -213,12 +213,12 @@ class FireResponseSimulator:
         self._region_counts: Dict[str, int] = {}
         self._region_tree: RegionTree = RegionTree()
 
-    def add_occurrence(self, region: str, severity: int) -> Occurrence:
+    def add_occurrence(self, region: str, Grau: int) -> Occurrence:
         """
         Insere nova ocorrência na fila de atendimento.
         """
-        occ = Occurrence(region, severity)
-        heapq.heappush(self._queue, (-severity, occ.timestamp, occ))
+        occ = Occurrence(region, Grau)
+        heapq.heappush(self._queue, (-Grau, occ.timestamp, occ))
         self._region_tree.insert(region)
         return occ
 
@@ -259,13 +259,13 @@ class FireResponseSimulator:
         """Gera relatório de quantidade de ocorrências atendidas por região."""
         return dict(self._region_counts)
 
-    def simulate_random_calls(self, n_calls: int, max_severity: int = 10) -> None:
+    def simulate_random_calls(self, n_calls: int, max_Grau: int = 10) -> None:
         """Simula chamadas aleatórias de ocorrências."""
         sample_regions = ["Norte", "Sul", "Leste", "Oeste", "Centro", "Montanhas", "Planicie"]
         for i in range(1, n_calls + 1):
             region = random.choice(sample_regions)
-            severity = min(i, max_severity)
-            self.add_occurrence(region, severity)
+            Grau = min(i, max_Grau)
+            self.add_occurrence(region, Grau)
 
     def get_pending_list(self) -> List[Occurrence]:
         """Retorna lista de ocorrências pendentes (sem remover)."""
@@ -321,12 +321,12 @@ def run_interactive():
             print_header("Inserir Nova Ocorrência")
             region = input("Digite o nome da região (EX.: Norte,Sul,Leste,Oeste,Centro,Montanhas,Planicie, Vale, ETC): ")
             try:
-                severity = int(input("Digite o grau do incendio, dentro da escala (1 a 10): "))
+                Grau = int(input("Digite o grau do incendio, dentro da escala (1 a 10): "))
             except ValueError:
-                print("Grau inválida. Operação cancelada.")
+                print("Grau de incêndio inválido. Operação cancelada.")
                 pause()
                 continue
-            occ = sim.add_occurrence(region, severity)
+            occ = sim.add_occurrence(region, Grau)
             print(f"Ocorrência inserida: {occ}")
             pause()
 
@@ -337,7 +337,7 @@ def run_interactive():
                 print("Não há ocorrências pendentes.")
             else:
                 for occ in pendings:
-                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.severity} | Status: {occ.status}")
+                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.Grau} | Status: {occ.status}")
             pause()
 
         elif choice == 3:
@@ -377,7 +377,7 @@ def run_interactive():
                 for occ in history:
                     # chama occ.get_actions() 
                     concluido_em = occ.get_actions()[-1].split(" - ")[0]
-                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.severity} | Concluída em: {concluido_em}")
+                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.Grau} | Concluída em: {concluido_em}")
             pause()
         elif choice == 6:
             print_header("Relatório por Região")
