@@ -99,7 +99,7 @@ class RegionTreeNode:
 
 class RegionTree:
     """
-    Árvore binária que organiza regiões (por ordem lexicográfica dos nomes).
+    Árvore binária que organiza regiões (por ordem ALFABETICA dos nomes).
     Método:
         insert(region_name): insere novo nó na árvore.
         in_order_traversal() -> List[str]: retorna lista de regiões em ordem alfabética.
@@ -145,7 +145,7 @@ class Occurrence:
     Atributos:
         id: identificador único da ocorrência.
         region: string com o nome da região/município.
-        severity: nível de severidade (int maior → prioridade maior).
+        severity: nível da queimada (int maior → prioridade maior).
         status: 'pendente', 'em atendimento' ou 'concluída'.
         timestamp: data/hora de criação.
         actions: pilha de ações registradas durante o atendimento.
@@ -200,7 +200,7 @@ class Occurrence:
 # ------------------------------------------------------------
 class FireResponseSimulator:
     """
-    Simulador que gerencia ocorrências de queimada.
+    Simulador que gerencia ocorrências de queimada, IGNIRA.
     Usa:
         - heap (priority queue) para gerenciar fila de ocorrências.
         - lista ligada para armazenar histórico de atendimentos.
@@ -276,12 +276,12 @@ class FireResponseSimulator:
 # Funções de UI no terminal
 # ------------------------------------------------------------
 def clear_screen():
-    """Limpa a tela do terminal de forma cross-platform."""
+    """Limpa a tela do terminal."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def print_header(title: str):
-    """Imprime um cabeçalho formatado com o título centralizado."""
+    """cabeçalho formatado com o título centralizado."""
     clear_screen()
     print("=" * 60)
     print(title.center(60))
@@ -314,16 +314,16 @@ def main_menu():
 def run_interactive():
     sim = FireResponseSimulator()
     while True:
-        print_header("Simulador de Resposta a Queimadas")
+        print_header("Simulador de Resposta a Queimadas (IGNIRA)")
         choice = main_menu()
 
         if choice == 1:
             print_header("Inserir Nova Ocorrência")
             region = input("Digite o nome da região (EX.: Norte,Sul,Leste,Oeste,Centro,Montanhas,Planicie, Vale, ETC): ")
             try:
-                severity = int(input("Digite a severidade (1 a 10): "))
+                severity = int(input("Digite o grau do incendio, dentro da escala (1 a 10): "))
             except ValueError:
-                print("Severidade inválida. Operação cancelada.")
+                print("Grau inválida. Operação cancelada.")
                 pause()
                 continue
             occ = sim.add_occurrence(region, severity)
@@ -337,7 +337,7 @@ def run_interactive():
                 print("Não há ocorrências pendentes.")
             else:
                 for occ in pendings:
-                    print(f"ID: {occ.id} | Região: {occ.region} | Severidade: {occ.severity} | Status: {occ.status}")
+                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.severity} | Status: {occ.status}")
             pause()
 
         elif choice == 3:
@@ -360,7 +360,7 @@ def run_interactive():
                 print("ID inválido. Operação cancelada.")
                 pause()
                 continue
-            new_status = input("Digite o novo status (ex: cancelado): ")
+            new_status = input("Digite o novo status (cancelado, em atendimento ou concluida): ")
             updated = sim.update_status(occ_id, new_status)
             if updated:
                 print(f"Status atualizado para '{new_status}'.")
@@ -377,7 +377,7 @@ def run_interactive():
                 for occ in history:
                     # chama occ.get_actions() 
                     concluido_em = occ.get_actions()[-1].split(" - ")[0]
-                    print(f"ID: {occ.id} | Região: {occ.region} | Severidade: {occ.severity} | Concluída em: {concluido_em}")
+                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.severity} | Concluída em: {concluido_em}")
             pause()
         elif choice == 6:
             print_header("Relatório por Região")
