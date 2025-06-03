@@ -1,4 +1,3 @@
-import heapq
 import random
 import datetime
 import os
@@ -53,9 +52,9 @@ class Node:
 
 class LinkedList:
     """
-    Implementação de lista ligada simplesmente encadeada.
+    Implementação de lista ligada encadeada.
     Métodos:
-        append(data): adiciona um novo nó ao final da lista.
+        append(data): novo nó ao final da lista.
         traverse() -> List[Any]: retorna lista de todos os dados armazenados, em ordem.
     """
     def __init__(self) -> None:
@@ -99,7 +98,7 @@ class RegionTreeNode:
 
 class RegionTree:
     """
-    Árvore binária que organiza regiões (por ordem ALFABETICA dos nomes).
+    Árvore binária que organiza regiões (por ordem ALFABÉTICA dos nomes).
     Método:
         insert(region_name): insere novo nó na árvore.
         in_order_traversal() -> List[str]: retorna lista de regiões em ordem alfabética.
@@ -118,6 +117,7 @@ class RegionTree:
             node.left = self._insert_rec(node.left, region_name)
         elif region_name > node.region_name:
             node.right = self._insert_rec(node.right, region_name)
+        # se for igual, não insere novamente
         return node
 
     def in_order_traversal(self) -> List[str]:
@@ -137,7 +137,7 @@ class RegionTree:
 
 
 # ------------------------------------------------------------
-# Classe que representa uma Ocorrência de Queimada
+#  Ocorrência de Queimada
 # ------------------------------------------------------------
 class Occurrence:
     """
@@ -146,7 +146,7 @@ class Occurrence:
         id: identificador único da ocorrência.
         region: string com o nome da região/município.
         Grau: nível da queimada (int maior → prioridade maior).
-        status: 'pendente', 'em atendimento' ou 'concluída'.
+        status: 'pendente', 'em atendimento', 'concluida' ou 'cancelado'.
         timestamp: data/hora de criação.
         actions: pilha de ações registradas durante o atendimento.
     Métodos:
@@ -180,6 +180,7 @@ class Occurrence:
         temp_stack = Stack()
         actions_list: List[str] = []
 
+        # retira todas as ações para extrair em ordem e depois retorna à pilha original
         while not self.actions.is_empty():
             item = self.actions.pop()
             actions_list.append(item)
@@ -196,19 +197,119 @@ class Occurrence:
 
 
 # ------------------------------------------------------------
+# Implementação monte para Occurrence
+# ------------------------------------------------------------
+class MHeap:
+    """
+    Max-heap para Occurrence, priorizando:
+      1) Grau maior
+      2) timestamp mais antigo (ou seja, timestamp menor em valor)
+    A lista interna armazena as tuplas (Occurrence), mas a comparação é feita
+    por (Grau, -timestamp_timestamp), de forma que maior Grau e (em empate)
+    timestamp mais antigo fiquem no topo.
+    29/06 - terminar amanhã
+    """
+    def __init__(self):
+        self._data: List[Occurrence] = []
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def _compare(self, occ1: Occurrence, occ2: Occurrence) -> bool:
+        """
+        Retorna True se occ1 tiver prioridade maior que occ2 (deveria ficar acima no heap).
+        Priorizamos Grau maior. Em empate, timestamp menor (mais antigo).
+        """
+        if occ1.Grau != occ2.Grau:
+            return occ1.Grau > occ2.Grau
+        return occ1.timestamp < occ2.timestamp
+
+    def push(self, occ: Occurrence) -> None:
+        """Insere uma nova ocorrência e ajusta o heap."""
+        self._data.append(occ)
+        self._heapify_up(len(self._data) - 1)
+
+    def pop(self) -> Occurrence:
+        """Remove e retorna a ocorrência de maior prioridade ."""
+        if not self._data:
+            raise IndexError("Pop de heap vazio")
+        top = self._data[0]
+        last = self._data.pop()
+        if self._data:
+            self._data[0] = last
+            self._heapify_down(0)
+        return top
+
+    def _heapify_up(self, idx: int) -> None:
+        """Sobe o elemento em idx até a posição correta."""
+        parent = (idx - 1) // 2
+        if parent < 0:
+            return
+        if self._compare(self._data[idx], self._data[parent]):
+            # troca filho com pai
+            self._data[idx], self._data[parent] = self._data[parent], self._data[idx]
+            self._heapify_up(parent)
+
+    def _heapify_down(self, idx: int) -> None:
+        """Desce o elemento em idx até a posição correta."""
+        left = 2 * idx + 1
+        right = 2 * idx + 2
+        largest = idx
+
+        if left < len(self._data) and self._compare(self._data[left], self._data[largest]):
+            largest = left
+        if right < len(self._data) and self._compare(self._data[right], self._data[largest]):
+            largest = right
+
+        if largest != idx:
+            self._data[idx], self._data[largest] = self._data[largest], self._data[idx]
+            self._heapify_down(largest)
+
+    def remove_by_id(self, occurrence_id: int) -> bool:
+        """
+        Remove do heap a ocorrência cujo .id == occurrence_id.
+        Retorna True se encontrada e removida, False caso contrário.
+        """
+        for i, occ in enumerate(self._data):
+            if occ.id == occurrence_id:
+                # troca com o último e remove
+                last = self._data.pop()
+                if i < len(self._data):
+                    self._data[i] = last
+                    # ajuste para cima e para baixo 
+                    self._heapify_up(i)
+                    self._heapify_down(i)
+                return True
+        return False
+
+    def peek_all(self) -> List[Occurrence]:
+        """
+        Retorna todas as ocorrências em ordem de prioridade (sem remover).
+        Para exibir a lista pendente, fazemos uma cópia e extraímos todos em sequência.
+        """
+        
+        copia = MHeap()
+        copia._data = self._data.copy()
+        resultado: List[Occurrence] = []
+        while len(copia) > 0:
+            resultado.append(copia.pop())
+        return resultado
+
+
+# ------------------------------------------------------------
 # Classe Controladora do Simulador
 # ------------------------------------------------------------
 class FireResponseSimulator:
     """
-    Simulador que gerencia ocorrências de queimada, IGNIRA.
+      (IGNIRA) Gerenciador de ocorrências de queimadass.
     Usa:
-        - heap (priority queue) para gerenciar fila de ocorrências.
-        - lista ligada para armazenar histórico de atendimentos.
+        - Heap para gerenciar fila de ocorrências (sem heapq).
+        - LinkedList para armazenar histórico de atendimentos.
         - dicionário para relatório por região.
-        - árvore binária para estruturar regiões (demonstrativo).
+        - RegionTree para estruturar regiões (demonstrativo).
     """
     def __init__(self) -> None:
-        self._queue: List[Tuple[int, datetime.datetime, Occurrence]] = []
+        self._heap = MHeap()
         self._history: LinkedList = LinkedList()
         self._region_counts: Dict[str, int] = {}
         self._region_tree: RegionTree = RegionTree()
@@ -218,7 +319,7 @@ class FireResponseSimulator:
         Insere nova ocorrência na fila de atendimento.
         """
         occ = Occurrence(region, Grau)
-        heapq.heappush(self._queue, (-Grau, occ.timestamp, occ))
+        self._heap.push(occ)
         self._region_tree.insert(region)
         return occ
 
@@ -227,15 +328,15 @@ class FireResponseSimulator:
         Remove da fila e atende a ocorrência de maior prioridade.
         Simula ações e atualiza histórico e relatório.
         """
-        if not self._queue:
+        if len(self._heap) == 0:
             return None
 
-        _, _, occ = heapq.heappop(self._queue)
+        occ = self._heap.pop()
         occ.status = "em atendimento"
         occ.add_action("Início de atendimento")
         occ.add_action("Equipe alocada")
         occ.add_action("Fogo contido")
-        occ.status = "concluída"
+        occ.status = "concluida"
         occ.add_action("Atendimento finalizado")
         self._history.append(occ)
         self._region_counts[occ.region] = self._region_counts.get(occ.region, 0) + 1
@@ -244,12 +345,19 @@ class FireResponseSimulator:
     def update_status(self, occurrence_id: int, new_status: str) -> bool:
         """
         Atualiza o status de uma ocorrência específica na fila (se ainda pendente).
+        Se o novo status for diferente de 'pendente', ela é removida da fila.
         """
-        for idx, (_sev, _ts, occ) in enumerate(self._queue):
-            if occ.id == occurrence_id:
-                occ.status = new_status
-                return True
-        return False
+        #  verifica se a ocorrência está na fila pendente
+        # se encontrada, atualiza o status e remove da fila.
+        removed = self._heap.remove_by_id(occurrence_id)
+        if removed:
+            # Se foi removida da fila, atualizar o status dela
+            # lista temporária ou armazenar mapa id->obj
+            # dicionário id->Occurrence sempre que criar
+            
+            pass
+        # Se não estava na fila, talvez já tenha sido atendida/concluida.
+        return removed
 
     def list_history(self) -> List[Occurrence]:
         """Retorna lista de todas as ocorrências atendidas, em ordem de atendimento."""
@@ -261,7 +369,7 @@ class FireResponseSimulator:
 
     def simulate_random_calls(self, n_calls: int, max_Grau: int = 10) -> None:
         """Simula chamadas aleatórias de ocorrências."""
-        sample_regions = ["Norte", "Sul", "Leste", "Oeste", "Centro", "Montanhas", "Planicie"]
+        sample_regions = ["Norte", "Sul", "Leste", "Oeste", "Centro", "Montanhas", "Planície","vale"]
         for i in range(1, n_calls + 1):
             region = random.choice(sample_regions)
             Grau = min(i, max_Grau)
@@ -269,11 +377,66 @@ class FireResponseSimulator:
 
     def get_pending_list(self) -> List[Occurrence]:
         """Retorna lista de ocorrências pendentes (sem remover)."""
-        return [occ for (_sev, _ts, occ) in sorted(self._queue, reverse=True)]
+        return self._heap.peek_all()
 
 
 # ------------------------------------------------------------
-# Funções de UI no terminal
+# Ajuste no FireResponseSimulator para mapear id -> instância
+# ------------------------------------------------------------
+class FireResponseSimulatorComMapeamento(FireResponseSimulator):
+    """
+    Extensão que mantém um dicionário interno id->Occurrence, para permitir
+    atualização de status ao remover do heap.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._id_map: Dict[int, Occurrence] = {}
+
+    def add_occurrence(self, region: str, Grau: int) -> Occurrence:
+        occ = super().add_occurrence(region, Grau)
+        self._id_map[occ.id] = occ
+        return occ
+
+    def attend_next(self) -> Optional[Occurrence]:
+        occ = super().attend_next()
+        if occ is not None:
+            # remove do mapeamento, já foi atendida e não faz mais sentido atualizar
+            self._id_map.pop(occ.id, None) 
+        return occ
+
+    def update_status(self, occurrence_id: int, new_status: str) -> bool:
+        """
+        Atualiza o status de uma ocorrência específica na fila (se ainda pendente).
+        Se o novo status for diferente de 'pendente', ela é removida da fila.
+        """
+        if occurrence_id not in self._id_map:
+            return False
+
+        occ = self._id_map[occurrence_id]
+        if occ.status != "pendente":
+            return False  # já está em atendimento, concluida, ou cancelada
+
+        # Remove do heap
+        removed = self._heap.remove_by_id(occurrence_id)
+        if removed:
+            occ.status = new_status
+            # Se cancelar, não entra no histórico nem no relatório; apenas sai da fila.
+            if new_status == "cancelado":
+                # simplesmente sai da fila, não vai para histórico.
+                pass
+            else:
+                # Se mudar para "em atendimento"  DEIXEI SEM NENHUMA AÇÃO!!!
+                #  aqui só garante que sai da fila
+                pass
+            # retirar do mapeamento para não permitir novos updates
+            self._id_map.pop(occurrence_id, None)
+            return True
+
+        return False
+
+
+# ------------------------------------------------------------
+# Funções de UI no terminal 
 # ------------------------------------------------------------
 def clear_screen():
     """Limpa a tela do terminal."""
@@ -281,7 +444,7 @@ def clear_screen():
 
 
 def print_header(title: str):
-    """cabeçalho formatado com o título centralizado."""
+    """Cabeçalho ."""
     clear_screen()
     print("=" * 60)
     print(title.center(60))
@@ -294,7 +457,7 @@ def pause():
 
 
 def main_menu():
-    """Exibe o menu principal e retorna a opção escolhida."""
+    """menu principal e retorna a opção escolhida."""
     print("1. Inserir nova ocorrência")
     print("2. Listar ocorrências pendentes")
     print("3. Atender próxima ocorrência")
@@ -312,16 +475,16 @@ def main_menu():
 
 
 def run_interactive():
-    sim = FireResponseSimulator()
+    sim = FireResponseSimulatorComMapeamento()
     while True:
         print_header("Simulador de Resposta a Queimadas (IGNIRA)")
         choice = main_menu()
 
         if choice == 1:
             print_header("Inserir Nova Ocorrência")
-            region = input("Digite o nome da região (EX.: Norte,Sul,Leste,Oeste,Centro,Montanhas,Planicie, Vale, ETC): ")
+            region = input("Digite o nome da região (EX.: Norte,Sul,Leste,Oeste,Centro,Montanhas,Planície, Vale, ETC): ")
             try:
-                Grau = int(input("Digite o grau do incendio, dentro da escala (1 a 10): "))
+                Grau = int(input("Digite o grau do incêndio, dentro da escala (1 a 10): "))
             except ValueError:
                 print("Grau de incêndio inválido. Operação cancelada.")
                 pause()
@@ -360,12 +523,16 @@ def run_interactive():
                 print("ID inválido. Operação cancelada.")
                 pause()
                 continue
-            new_status = input("Digite o novo status (cancelado, em atendimento ou concluida): ")
+            new_status = input("Digite o novo status (cancelado, em atendimento, concluida): ").strip().lower()
+            if new_status not in ("cancelado", "em atendimento", "concluida"):
+                print("Status inválido. Operação cancelada.")
+                pause()
+                continue
             updated = sim.update_status(occ_id, new_status)
             if updated:
-                print(f"Status atualizado para '{new_status}'.")
+                print(f"Status atualizado para '{new_status}' e ocorrência removida da fila pendente.")
             else:
-                print(f"Ocorrência ID={occ_id} não encontrada na fila pendente.")
+                print(f"Ocorrência ID={occ_id} não encontrada ou não está mais pendente.")
             pause()
 
         elif choice == 5:
@@ -375,10 +542,12 @@ def run_interactive():
                 print("Histórico vazio.")
             else:
                 for occ in history:
-                    # chama occ.get_actions() 
-                    concluido_em = occ.get_actions()[-1].split(" - ")[0]
-                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.Grau} | Concluída em: {concluido_em}")
+                    # pega a data-hora da última ação registrada (Atendimento finalizado)
+                    ultimo_action = occ.get_actions()[0]  # primeira da lista é a mais recente
+                    concluido_em = ultimo_action.split(" - ")[0]
+                    print(f"ID: {occ.id} | Região: {occ.region} | Grau: {occ.Grau} | concluida em: {concluido_em}")
             pause()
+
         elif choice == 6:
             print_header("Relatório por Região")
             report = sim.generate_report()
