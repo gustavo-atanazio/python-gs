@@ -17,13 +17,18 @@ Este projeto consiste em um simulador de resposta a ocorrências de queimadas es
 ### Estrutura do Projeto
 
 - **main.py**: contém todas as classes e funções:
-  - `Stack` (pilha)  
-  - `LinkedList` (lista ligada)  
-  - `RegionTree` (árvore binária de busca)  
-  - `Occurrence` (representa cada ocorrência)  
-  - `FireResponseSimulator` (controla fila, histórico e relatórios)  
-  - Funções de UI: limpar tela, cabeçalho, menu, pausa  
-  - `run_interactive()`: exibe o menu e processa interações
+ - **Stack**: pilha LIFO para armazenar ações de cada ocorrência.
+  - **LinkedList**: lista ligada para manter o histórico de atendimentos.
+  - **RegionTree**: árvore binária para organizar nomes de regiões em ordem alfabética.
+  - **Occurrence**: representa cada ocorrência de queimada (ID, região, grau, status, timestamp e ações).
+  - **MHeap**: implementação de max-heap (sem usar `heapq`) para priorizar ocorrências por `Grau` e `timestamp`.
+  - **FireResponseSimulatorComMapeamento**: gerencia fila de ocorrências, histórico, relatórios e permite atualizar status pelo ID.
+  - Funções de UI:
+    - `clear_screen()`, `print_header(title)`, `pause()`
+    - `main_menu()`: exibe opções e lê escolha do usuário.
+    - `run_interactive()`: loop principal que processa cada opção de menu.
+
+---
 
 ## Ao rodar o código, surgirá o menu:
 
@@ -40,3 +45,12 @@ Este projeto consiste em um simulador de resposta a ocorrências de queimadas es
     0. Sair
     Escolha uma opção:
 
+Digite o número correspondente e pressione Enter para navegar.
+
+---
+## Funcionalidades do MENU
+- **1**Inserir nova ocorrência 
+  --Solicita nome da região e grau (1–10). Se o grau não for inteiro, retorna ao menu.
+  --Cria uma instância `Occurrence` (ID gerado automaticamente, status “pendente”, timestamp atual).
+  --Insere no ` MHeap ` (por prioridade de grau e timestamp) e registra a região na RegionTree.
+  Exibe:
