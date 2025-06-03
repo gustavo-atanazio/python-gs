@@ -21,7 +21,7 @@ Este projeto consiste em um simulador de resposta a ocorrências de queimadas es
   - **LinkedList**: lista ligada para manter o histórico de atendimentos.
   - **RegionTree**: árvore binária para organizar nomes de regiões em ordem alfabética.
   - **Occurrence**: representa cada ocorrência de queimada (ID, região, grau, status, timestamp e ações).
-  - **MHeap**: implementação de max-heap (sem usar `heapq`) para priorizar ocorrências por `Grau` e `timestamp`.
+  - **MHeap**: implementação de max-heap para priorizar ocorrências por `Grau` e `timestamp`.
   - **FireResponseSimulatorComMapeamento**: gerencia fila de ocorrências, histórico, relatórios e permite atualizar status pelo ID.
   - Funções de UI:
     - `clear_screen()`, `print_header(title)`, `pause()`
@@ -114,3 +114,6 @@ Digite o número correspondente e pressione Enter para navegar.
 0. **Sair**
    - Exibe “Saindo do Simulador...” e encerra o programa.
 
+
+### Esclarecimentos/Comentários para o professor
+Olá professor- Matheus Alves aqui, passando para esclarecer que utilizei llm para me auxiliar na correção do meu código e para ajustar os comentários ( Não estranhe se tiver muitos kkk). Gostaria de usar Kivy para deixar a interface mais bonita e incorpada, mas o pouco tempo que temos, para fazer tantas entregas, não me permite. 
